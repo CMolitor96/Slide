@@ -19,11 +19,11 @@ router.get('/', async (req, res) => {
 //Get a single user with id
 router.get('/:id', async (req, res) => {
     try {
-       let response = await User.find({_id: req.params.id});
+        let response = await User.find({ _id: req.params.id });
         res.status(200).json(response);
     } catch (err) {
         if (err.name === 'CastError') {
-            res.status(404).json({message: `No thought with id: ${req.params.id} found`})
+            res.status(404).json({ message: `No thought with id: ${req.params.id} found` })
         } else {
             res.status(500).json(err);
         }
@@ -53,14 +53,14 @@ router.put('/:id', async (req, res) => {
             {
                 username: req.body.username
             },
-            {new: true}
+            { new: true }
         )
-        .then((response) => {
-            res.status(200).json(response)
-        })
-        .catch(() => {
-            res.status(404).json(`No user found with id: ${req.params.id}`)
-        })
+            .then((response) => {
+                res.status(200).json(response)
+            })
+            .catch(() => {
+                res.status(404).json(`No user found with id: ${req.params.id}`)
+            })
     } catch (err) {
         res.status(500).json(err);
     }
@@ -69,18 +69,18 @@ router.put('/:id', async (req, res) => {
 //Delete user and associated thoughts
 router.delete('/:id', async (req, res) => {
     try {
-        await User.find({_id: req.params.id})
+        await User.find({ _id: req.params.id })
             .then((response) => {
                 let thoughts = response[0].thoughts;
                 for (i = 0; i < thoughts.length; i++) {
                     Thought.findOneAndDelete(
-                        {_id: thoughts[i] }
+                        { _id: thoughts[i] }
                     )
-                    .catch(() => {
-                        res.status(404).json(`No thought found with id: ${thoughts[i]} `);
-                    })
+                        .catch(() => {
+                            res.status(404).json(`No thought found with id: ${thoughts[i]} `);
+                        })
                 }
-                User.findByIdAndDelete({_id: req.params.id})
+                User.findByIdAndDelete({ _id: req.params.id })
                     .then(() => {
                         res.status(200).json(`User ${req.params.id} deleted`)
                     })
@@ -92,6 +92,34 @@ router.delete('/:id', async (req, res) => {
                 res.status(400).json('Something went wrong');
             })
     } catch (err) {
+        res.status(500).json(err);
+    }
+});
+
+//Post route for adding friends
+router.post('/:userId/friends/:friendId', async (req, res) => {
+    try {
+        await User.findOneAndUpdate(
+            { _id: req.params.userId },
+            { $addToSet: { friends: req.params.friendId } }
+        );
+        res.status(200).json(`Friend with id: ${req.params.friendId} added.`);
+    } catch (err) {
+        console.log(err.name);
+        res.status(500).json(err);
+    }
+});
+
+//Delete route for deleting friends
+router.delete('/:userId/friends/:friendId', async (req, res) => {
+    try {
+        await User.findOneAndUpdate(
+            { _id: req.params.userId },
+            { $pull: { friends: req.params.friendId } }
+        );
+        res.status(200).json(`Friend with id: ${req.params.friendId} removed.`);
+    } catch (err) {
+        console.log(err.name);
         res.status(500).json(err);
     }
 });
