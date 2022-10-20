@@ -16,24 +16,20 @@ router.get('/', async (req, res) => {
     }
 });
 
-//Get a single user
+//Get a single user with id
 router.get('/:id', async (req, res) => {
     try {
-        await User.find({_id: req.params.id})
-            .then((response) => {
-                if (response.length === 0) {
-                    res.status(404).json({message: `No user with id: ${req.params.id} found`})
-                } else {
-                res.status(200).json(response);
-                }
-            })
-            .catch(() => {
-                res.status(404).json({message: `No thought with id: ${req.params.id} found`})
-            })
+       let response = await User.find({_id: req.params.id});
+        res.status(200).json(response);
     } catch (err) {
-        res.status(500).json(err);
+        if (err.name === 'CastError') {
+            res.status(404).json({message: `No thought with id: ${req.params.id} found`})
+        } else {
+            res.status(500).json(err);
+        }
     }
 });
+
 
 //Post a single user
 router.post('/', async (req, res) => {
@@ -73,7 +69,6 @@ router.put('/:id', async (req, res) => {
 //Delete user and associated thoughts
 router.delete('/:id', async (req, res) => {
     try {
-        // await User.deleteOne({_id: req.params.id})
         await User.find({_id: req.params.id})
             .then((response) => {
                 let thoughts = response[0].thoughts;
@@ -81,9 +76,6 @@ router.delete('/:id', async (req, res) => {
                     Thought.findOneAndDelete(
                         {_id: thoughts[i] }
                     )
-                    // .then((response) => {
-                    //     // console.log(response);
-                    // })
                     .catch(() => {
                         res.status(404).json(`No thought found with id: ${thoughts[i]} `);
                     })
@@ -95,6 +87,9 @@ router.delete('/:id', async (req, res) => {
                     .catch(() => {
                         res.status(404).json(`No user found with id: ${req.params.id}`);
                     })
+            })
+            .catch(() => {
+                res.status(400).json('Something went wrong');
             })
     } catch (err) {
         res.status(500).json(err);

@@ -16,24 +16,20 @@ router.get('/', async (req, res) => {
     }
 });
 
-//Get a single thought
+//Get a single thought with id
 router.get('/:id', async (req, res) => {
     try {
-        await Thought.find({_id: req.params.id})
-            .then((response) => {
-                if (response.length === 0) {
-                    res.status(404).json({message: `No thought with id: ${req.params.id} found`})
-                } else {
-                res.status(200).json(response);
-                }
-            })
-            .catch(() => {
-                res.status(404).json({message: `No thought with id: ${req.params.id} found`})
-            })
+        let response = await Thought.find({ _id: req.params.id });
+        res.status(200).json(response);
     } catch (err) {
-        res.status(500).json(err);
+        if (err.name === 'CastError') {
+            res.status(404).json({ message: `No thought with id: ${req.params.id} found` })
+        } else {
+            res.status(500).json(err);
+        }
     }
 });
+
 
 //Post a single thought
 router.post('/', async (req, res) => {
@@ -44,8 +40,8 @@ router.post('/', async (req, res) => {
             {
                 username: req.body.username,
                 _id: req.body.userId
-            
-            }, 
+
+            },
             { $addToSet: { thoughts: newThought._id } },
             // { runValidators: true, new: true }
         )
@@ -58,21 +54,21 @@ router.post('/', async (req, res) => {
     }
 });
 
-//Put a single thought with id
+//Update a single thought with id
 router.put('/:id', async (req, res) => {
     try {
         await Thought.findOneAndUpdate(
-            {_id: req.params.id},
-            {thoughtText: req.body.thoughtText},
-            {new: true}
+            { _id: req.params.id },
+            { thoughtText: req.body.thoughtText },
+            { new: true }
         )
-        .then((response) => {
-            res.status(200).json(response);
-        })
-        .catch(() => {
-            res.status(404).json(`No thought found with id: ${req.params.id}`);
-        })
-    }catch (err) {
+            .then((response) => {
+                res.status(200).json(response);
+            })
+            .catch(() => {
+                res.status(404).json(`No thought found with id: ${req.params.id}`);
+            })
+    } catch (err) {
         res.status(500).json(err);
     }
 });
@@ -80,14 +76,10 @@ router.put('/:id', async (req, res) => {
 //Delete route for thought with id
 router.delete('/:id', async (req, res) => {
     try {
-        await Thought.findOneAndDelete(
-            {_id: req.params.id}
-        )
-        .then((response) => {
-            !response
-                ? res.status(404).json(`No thought found with id: ${req.params.id}`)
-                : res.status(200).json(response);
-        })
+        let response = await Thought.findOneAndDelete({ _id: req.params.id });
+        !response
+            ? res.status(404).json(`No thought found with id: ${req.params.id}`)
+            : res.status(200).json(response);
     } catch (err) {
         res.status(500).json(err);
     }
