@@ -85,4 +85,21 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
+//Post route for reaction to single thought
+router.post('/:thoughtId/reactions', async (req, res) => {
+    try {
+        // let reactionBody = req.body.reactionBody;
+        let reaction = await Thought.findOneAndUpdate(
+            {_id: req.params.thoughtId},
+            {$addToSet: {reactions: req.body }},
+            {new: true}
+            );
+        res.status(200).json(reaction);
+    } catch (err) {
+        console.log(err);
+        console.log(err.name);
+        res.status(500).json(err);
+    }
+});
+
 module.exports = router;

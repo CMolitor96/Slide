@@ -5,28 +5,30 @@ const Thought = require('../../models/thoughts');
 //Get all users
 router.get('/', async (req, res) => {
     try {
-        let findAllUsers = await User.find({});
+        let findAllUsers = await User.find({}, {__v: 0, id: 0});
         if (findAllUsers.length === 0) {
-            res.json('There are currently no registered users');
+            res.json({message: 'There are currently no registered users'});
         } else {
             res.status(200).json(findAllUsers);
         }
     } catch (err) {
-        res.status(500).json(err);
+        err.name === 'CastError'
+        ?res.json({message: 'Invalid userId'})
+        :res.status(500).json(err);
     }
 });
 
 //Get a single user with id
 router.get('/:id', async (req, res) => {
     try {
-        let response = await User.find({ _id: req.params.id });
-        res.status(200).json(response);
+        let response = await User.find({ _id: req.params.id }, {__v: 0, id: 0});
+        response.length === 0
+        ?res.json({message: `No user found with id: ${req.params.id}`})
+        :res.status(200).json(response);
     } catch (err) {
-        if (err.name === 'CastError') {
-            res.status(404).json({ message: `No thought with id: ${req.params.id} found` })
-        } else {
-            res.status(500).json(err);
-        }
+        err.name === 'CastError'
+        ?res.json({message: 'Invalid userId'})
+        :res.status(500).json(err);
     }
 });
 
@@ -46,23 +48,18 @@ router.post('/', async (req, res) => {
 //Put to update a user with _id
 router.put('/:id', async (req, res) => {
     try {
-        await User.findOneAndUpdate(
-            {
-                _id: req.params.id
-            },
-            {
-                username: req.body.username
-            },
+        let updateUser = await User.findOneAndUpdate(
+            {_id: req.params.id},
+            {username: req.body.username},
             { new: true }
-        )
-            .then((response) => {
-                res.status(200).json(response)
-            })
-            .catch(() => {
-                res.status(404).json(`No user found with id: ${req.params.id}`)
-            })
+        );
+        updateUser 
+        ? res.status(200).json(updateUser)
+        :res.json({message: `No user found with id: ${req.params.id}`})
     } catch (err) {
-        res.status(500).json(err);
+        err.name === 'CastError'
+        ?res.json({message: 'Invalid userId'})
+        :res.status(500).json(err);
     }
 });
 
@@ -99,11 +96,12 @@ router.delete('/:id', async (req, res) => {
 //Post route for adding friends
 router.post('/:userId/friends/:friendId', async (req, res) => {
     try {
-        await User.findOneAndUpdate(
+        let newFriend = await User.findOneAndUpdate(
             { _id: req.params.userId },
-            { $addToSet: { friends: req.params.friendId } }
+            { $addToSet: { friends: req.params.friendId } },
+            {new: true}
         );
-        res.status(200).json(`Friend with id: ${req.params.friendId} added.`);
+        res.status(200).json(newFriend);
     } catch (err) {
         console.log(err.name);
         res.status(500).json(err);
