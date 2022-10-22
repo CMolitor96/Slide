@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const Thought = require('../../models/thoughts');
 const User = require('../../models/user');
+const Reaction = require('../../models/reactions');
 
 //Get all thoughts
 router.get('/', async (req, res) => {
@@ -76,7 +77,7 @@ router.put('/:id', async (req, res) => {
 //Delete route for thought with id
 router.delete('/:id', async (req, res) => {
     try {
-        let response = await Thought.findOneAndDelete({ _id: req.params.id });
+        let response = await Thought.findOneAndDelete({ _id: req.params.id }, {new: true});
         !response
             ? res.status(404).json(`No thought found with id: ${req.params.id}`)
             : res.status(200).json(response);
@@ -88,7 +89,6 @@ router.delete('/:id', async (req, res) => {
 //Post route for reaction to single thought
 router.post('/:thoughtId/reactions', async (req, res) => {
     try {
-        // let reactionBody = req.body.reactionBody;
         let reaction = await Thought.findOneAndUpdate(
             {_id: req.params.thoughtId},
             {$addToSet: {reactions: req.body }},
@@ -96,8 +96,20 @@ router.post('/:thoughtId/reactions', async (req, res) => {
             );
         res.status(200).json(reaction);
     } catch (err) {
-        console.log(err);
-        console.log(err.name);
+        res.status(500).json(err);
+    }
+});
+
+//Delete route for reaction to single thought
+router.delete('/:thoughtId/reactions/:reactionId', async (req, res) => {
+    try {
+        let reaction = await Thought.findOneAndUpdate(
+            {_id: req.params.thoughtId},
+            {$pull: {reactions: {_id: req.params.reactionId} }},
+            {new: true}
+            );
+        res.status(200).json(reaction);
+    } catch (err) {
         res.status(500).json(err);
     }
 });

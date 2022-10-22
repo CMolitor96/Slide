@@ -66,28 +66,19 @@ router.put('/:id', async (req, res) => {
 //Delete user and associated thoughts
 router.delete('/:id', async (req, res) => {
     try {
-        await User.find({ _id: req.params.id })
-            .then((response) => {
-                let thoughts = response[0].thoughts;
-                for (i = 0; i < thoughts.length; i++) {
-                    Thought.findOneAndDelete(
-                        { _id: thoughts[i] }
-                    )
-                        .catch(() => {
-                            res.status(404).json(`No thought found with id: ${thoughts[i]} `);
-                        })
-                }
-                User.findByIdAndDelete({ _id: req.params.id })
-                    .then(() => {
-                        res.status(200).json(`User ${req.params.id} deleted`)
-                    })
-                    .catch(() => {
-                        res.status(404).json(`No user found with id: ${req.params.id}`);
-                    })
-            })
-            .catch(() => {
-                res.status(400).json('Something went wrong');
-            })
+        let user = await User.find({ _id: req.params.id });
+        if (user.length === 0) {
+            return res.status(404).json({message: `No user found with id: ${req.params.id}`});
+        }
+        let allThoughts = user[0].thoughts;
+        for (i = 0; i < allThoughts.length; i++) {
+            let thought = await Thought.findOneAndDelete({ _id: allThoughts[i]});
+            if (thought.length === 0) {
+                return res.status(404).json({message: `No thought found with id: ${allThoughts[i]}`});
+            }
+        }
+        let deleteUser = await User.findByIdAndDelete({ _id: req.params.id });
+        !deleteUser ? res.json({message: `No user found with id: ${req.params.id}`}):res.status(200).json({message: `User ${req.params.id} deleted successfully along with all associated thoughts`});
     } catch (err) {
         res.status(500).json(err);
     }
