@@ -1,7 +1,6 @@
 const router = require('express').Router();
 const Thought = require('../../models/thoughts');
 const User = require('../../models/user');
-const Reaction = require('../../models/reactions');
 
 //Get all thoughts
 router.get('/', async (req, res) => {
@@ -21,7 +20,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         let response = await Thought.find({ _id: req.params.id });
-        res.status(200).json(response);
+        response.length === 0
+            ?res.json({message: `No thought with id ${req.params.id}`})
+            :res.status(200).json(response);
     } catch (err) {
         if (err.name === 'CastError') {
             res.status(404).json({ message: `No thought with id: ${req.params.id} found` })
@@ -36,7 +37,6 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         let newThought = await Thought.create(req.body);
-        // console.log(newThought);
         let findUser = await User.findOneAndUpdate(
             {
                 username: req.body.username,
@@ -44,9 +44,7 @@ router.post('/', async (req, res) => {
 
             },
             { $addToSet: { thoughts: newThought._id } },
-            // { runValidators: true, new: true }
         )
-        // console.log(findUser);
         if (newThought && findUser) {
             res.status(200).json(newThought);
         }
@@ -58,19 +56,17 @@ router.post('/', async (req, res) => {
 //Update a single thought with id
 router.put('/:id', async (req, res) => {
     try {
-        await Thought.findOneAndUpdate(
+        let thought = await Thought.findOneAndUpdate(
             { _id: req.params.id },
             { thoughtText: req.body.thoughtText },
-            { new: true }
-        )
-            .then((response) => {
-                res.status(200).json(response);
-            })
-            .catch(() => {
-                res.status(404).json(`No thought found with id: ${req.params.id}`);
-            })
+            { new: true });
+        !thought
+            ?res.json({message: `No thought found with id: ${req.params.id}`})
+            :res.status(200).json(thought);
     } catch (err) {
-        res.status(500).json(err);
+        err.name === 'CastError'
+        ?res.json({message: 'Invalid userId'})
+        :res.status(500).json(err);
     }
 });
 
@@ -78,9 +74,19 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         let response = await Thought.findOneAndDelete({ _id: req.params.id }, {new: true});
-        !response
-            ? res.status(404).json(`No thought found with id: ${req.params.id}`)
-            : res.status(200).json(response);
+        if (!response) {
+            return res.status(404).json(`No thought found with id: ${req.params.id}`)
+        }
+        let user = await User.findOneAndUpdate(
+            {thoughts: req.params.id},
+            {$pull: {thoughts: req.params.id}}
+        );
+        if (!user) {
+            return res.status(404).json(`No user found with associated thoughtId: ${req.params.id}`);
+        }
+        if (response && user) {
+            res.status(200).json({message: `Thought successfully deleted with id: ${req.params.id}` });
+        }
     } catch (err) {
         res.status(500).json(err);
     }
@@ -105,6 +111,9 @@ router.delete('/:thoughtId/reactions/:reactionId', async (req, res) => {
     try {
         let reaction = await Thought.findOneAndUpdate(
             {_id: req.params.thoughtId},
+            //Normally pull deletes one instance of specified value, but in this case, reactions holds subdocuments, and pull matches the _id with 
+            //req.params.reactionId and deletes the entire subdocument since reaciton is only a schema and therefore a subdocument,
+            //unlike thoughts and friends in users which are arrays of just the thoughts or users _ids, so easier so $pull in those cases
             {$pull: {reactions: {_id: req.params.reactionId} }},
             {new: true}
             );

@@ -72,14 +72,14 @@ router.delete('/:id', async (req, res) => {
         }
         let allThoughts = user[0].thoughts;
         for (i = 0; i < allThoughts.length; i++) {
-            let thought = await Thought.findOneAndDelete({ _id: allThoughts[i]});
-            if (thought.length === 0) {
-                return res.status(404).json({message: `No thought found with id: ${allThoughts[i]}`});
-            }
+            await Thought.findOneAndDelete({ _id: allThoughts[i]});
         }
         let deleteUser = await User.findByIdAndDelete({ _id: req.params.id });
-        !deleteUser ? res.json({message: `No user found with id: ${req.params.id}`}):res.status(200).json({message: `User ${req.params.id} deleted successfully along with all associated thoughts`});
+        !deleteUser 
+        ?res.json({message: `No user found with id: ${req.params.id}`})
+        :res.status(200).json({message: `User ${req.params.id} deleted successfully along with all associated thoughts`});
     } catch (err) {
+        console.log(err);
         res.status(500).json(err);
     }
 });
