@@ -24,6 +24,8 @@ To use this project, simply clone this repo, npm install the dependencies, and s
 Please click the license badge for more information on the license under which this project is covered.
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ## Project Usage:
+Link to Walkthrough Video: (https://drive.google.com/file/d/1gtDgPA4QEM3Sk1J-GhmdKXcytUN-JKqO/view?usp=sharing)
+
 To use this project, there are two root urls from which all other actions stem, users and thoughts.
 
 `http://localhost:3001/api/users`
